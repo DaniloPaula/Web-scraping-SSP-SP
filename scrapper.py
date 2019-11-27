@@ -66,58 +66,7 @@ def extract_file_name(response_headers):
 
     return file_name
 
-
-def extract(month_value, year_value, information, write_to_disk=True):
-    """
-    Returns a dataframe with the information from the website.
-    If write_to_disk is True, then a xls file is created on disk.
-    """
-    print("Extracting")
-    session = requests.session()
-
-    url = "http://www.ssp.sp.gov.br/transparenciassp/"
-
-    response = session.post(url, headers=headers)
-    viewstate, eventvalidation = get_viewstate_eventvalidation(response.text)
-
-    parameters_list = [
-        [information],
-        [month_value, True, False],
-        [year_value, True, False],
-    ]
-    for parameters in parameters_list:
-        response = get_response(
-            session, viewstate, eventvalidation, *parameters)
-        html = response.text
-        viewstate, eventvalidation = get_viewstate_eventvalidation(html)
-
-    response = get_response(session,
-                            viewstate,
-                            eventvalidation,
-                            'ctl00$cphBody$ExportarBOLink',
-                            True,
-                            True,
-                            0)
-    file_name = extract_file_name(response.headers['content-disposition'])
-    print(file_name)
-    ssp_data = response.text.split('\n')
-    corrected_ssp_data = []
-    for dado in ssp_data:
-        dado_corrigido = re.split('\t{1}', dado)
-        corrected_ssp_data.append(dado_corrigido)
-    
-    if write_to_disk:
-        header = corrected_ssp_data[0]
-        corrected_ssp_data = corrected_ssp_data[1:]
-        df = pd.DataFrame(corrected_ssp_data)
-        df.to_excel("C:\\Users\\Danilo\\Desktop\\EPS\\TCC\\data\\SSP\\" +
-                    file_name, index=False, encoding='utf-8', header=header)
-
-    df = pd.DataFrame(corrected_ssp_data)
-    return df
-
-
-def extract_year(information, write_to_disk=True):
+def extract_year(information, directory, write_to_disk=True):
     """
     Returns a dataframe with the information from the website.
     If write_to_disk is True, then a xls file is created on disk.
@@ -172,10 +121,10 @@ def extract_year(information, write_to_disk=True):
                 header = corrected_ssp_data[0]
                 corrected_ssp_data = corrected_ssp_data[1:]
                 df = pd.DataFrame(corrected_ssp_data)
-                df.to_excel("C:\\Users\\Danilo\\Desktop\\EPS\\TCC\\src\\" +
+                df.to_excel(directory + "\\" +
                             file_name, index=False, encoding='utf-8', header=header)
 
-def run(write_to_disk=True):
+def run(directory, write_to_disk=True):
     """
     Interactive optin to run the scraper.
     Choose an option, a month and a year to download the corrected information.
@@ -210,10 +159,12 @@ def run(write_to_disk=True):
 
     information = informations[option]
 
-    return extract_year(information, write_to_disk)
+    return extract_year(information, directory, write_to_disk)
 
 def main():
-    run(True)
+
+    directory = str(input("Digite o diretorio para salvar os dados: "))
+    run(directory, True)
 
 if __name__ == "__main__":
     main()
